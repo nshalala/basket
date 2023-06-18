@@ -1,29 +1,27 @@
 let products = [];
 let cartItems = [];
 
-getProducts();
-getFromLocal();
+localGet();
+displayCart();
 
-function updateLocal(){
+function localAdd(){
     localStorage.setItem('cartItems', JSON.stringify(cartItems));
 }
 
-function getFromLocal(){
-    let data = localStorage.getItem('cartItems');
-    let items = JSON.parse(data);
-    cartItems = Array.from(items);
-    updateCart();
+function localGet(){
+    let items = JSON.parse(localStorage.getItem('cartItems'));
+    cartItems = items;
 }
 
-function showProducts(products){
+
+function showProducts(products) {
     let row = document.querySelector('.productsRow');
     let code = '';
-
     products.forEach(product => {
         code += `<div class="col mb-5">
-                    <div class="card"  style="height: 500px">
+                    <div class="card h-100">
                         <div class="badge bg-dark text-white position-absolute" style="top: 0.5rem; right: 0.5rem">Sale</div>
-                        <img class="card-img-top h-50" src="${product.thumbnail}" alt="${product.title}"/>
+                        <img class="card-img-top h-50 w-auto" src="${product.thumbnail}" alt="${product.title}" />
                         <div class="card-body p-4">
                             <div class="text-center">
                                 <h5 class="fw-bolder">${product.title}</h5>
@@ -41,9 +39,24 @@ function showProducts(products){
                 </div>`
     })
     row.innerHTML = code;
+    let count = document.querySelector('.itemsCount');
+    count.innerHTML = cartItems.length;
 }
 
-function updateCart(){
+function addToList(id) {
+    let index = cartItems.findIndex(item => item.id == id);
+    if (index == -1 || cartItems.length === 0) {
+        let new_product = Object.assign({}, products[id - 1]);
+        new_product.count = 1;
+        cartItems.push(new_product);
+    } else {
+        increaseCount(index);
+    }
+    localAdd();
+    displayCart();
+}
+
+function displayCart() {
     let list = document.querySelector('.itemsList');
     let count = document.querySelector('.itemsCount');
 
@@ -80,30 +93,17 @@ function updateCart(){
     count.innerHTML = cartItems.length;
 }
 
-function addToList(id) {
-    let index = cartItems.findIndex(item => item.id == id);
-    if (index == -1 || cartItems.length === 0) {
-        let new_product = Object.assign({}, products[id - 1]);
-        new_product.count = 1;
-        cartItems.push(new_product);
-    } else {
-        increaseCount(index);
-    }
-    updateCart();
-    updateLocal();
-}
-
 function deleteItem(index) {
     cartItems.splice(index, 1);
-    updateCart();
-    updateLocal();
+    localAdd();
+    displayCart();
 }
 
 function increaseCount(index) {
     let product = cartItems[index];
     product.count++;
-    updateCart();
-    updateLocal();
+    localAdd();
+    displayCart();
 }
 function decreaseCount(index) {
     let product = cartItems[index];
@@ -112,9 +112,10 @@ function decreaseCount(index) {
     } else {
         return;
     }
-    updateCart();
-    updateLocal();
+    localAdd();
+    displayCart();
 }
+
 function showRate(rate) {
     let filled = Math.round(rate);
     let empty = 5 - filled;
@@ -129,18 +130,18 @@ function showRate(rate) {
 }
 
 function calcDiscountPrice(price, discountPercentage) {
-    let discount = Math.ceil(price * discountPercentage / 100);
+    let discount = Math.floor(price * discountPercentage / 100);
     return price - discount;
-}
-
-async function getProducts() {
-    let data = await fetchUrl('https://dummyjson.com/products');
-    products = Array.from(data.products);
-    showProducts(products);
 }
 
 async function fetchUrl(url) {
     let response = await fetch(url);
     let data = await response.json();
     return data;
+}
+
+async function getProducts() {
+    let data = await fetchUrl('https://dummyjson.com/products');
+    let products = Array.from(data.products);
+    return products;
 }
